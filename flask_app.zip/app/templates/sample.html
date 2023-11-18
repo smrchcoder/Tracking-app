@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shuttle status</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='map.css') }}">
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.19.0.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- Include the Google Maps API with your API key -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCN5ri2E7xT1WLK1C_S1PHjnurHmclw7zM&callback=initMap" async defer></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/js-markerwithlabel@2.0.0/dist/markerwithlabel.js"></script>-->
+    <style>
+        /* Set the size of the map container */
+        #map-canvas {
+    width: 80%; /* Adjust the width as needed */
+    height: 500px;
+}
+        body{
+            background-color: #000;
+            color: #fff;
+        }
+        .center-text {
+            text-align: center;
+        }
+        thead th:nth-child(1) {
+    width: 10px; /* Adjust the width as needed for the first column */
+}
+
+thead th:nth-child(2) {
+    width: 10px; /* Adjust the width as needed for the second column */
+}
+
+thead th:nth-child(3) {
+    width: 10px; /* Adjust the width as needed for the third column */
+}
+
+thead th:nth-child(4) {
+    width: 10px; /* Adjust the width as needed for the fourth column */
+ /* Adjust the width as needed */
+}
+    </style>
+</head>
+<body>
+    <!-- Create a container for the map -->
+    <div id="bg">
+
+    </div>
+    <div id="bg-others"> <!-- Correct the ID attribute -->
+        <div class="container text-center"> <!-- Add "text-center" class to center-align content -->
+            <h1>Shuttle Status</h1>
+            <hr class="divider" /> <!-- Self-close the hr tag -->
+            <center><button class="btn btn-success col-sm-3" id="action">Start Tracking</button></center><br>
+        </div>
+    </div>
+
+        <!-- Combined Map and Table container within bg-others -->
+        <div class="container-fluid mt-5">
+            <div class="row">
+                <!-- Map container (switched positions) -->
+                <div class="col-lg-6" id="map-canvas"></div>
+                <!-- Table container (switched positions) -->
+                <div class="col-lg-6" id="table-container">
+                    <table class="table table-bordered bg-black text-white">
+                        <thead>
+                            <tr>
+                                <th>Shuttle ID</th>
+                                <th>Distance</th>
+                                <th>ETA</th>
+                                <th>Speed</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Rows will be added here using JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="map-controls">
+        <button id="zoom-in">Zoom In</button>
+        <button id="zoom-out">Zoom Out</button>
+    </div>
+    <script>
+
+        var map;
+        var mark;
+        var lineCoords = [];
+        var trackingEnabled = false; // Flag to track if tracking is enabled
+        var insertDataInterval;
+        // Initialize the map
+        function initMap() {
+            var initialLat = 22.9;
+            var initialLng = 77.01;
+            var initialZoom = 12;
+            // Create a Google Map centered at the initial coordinates
+            map = new google.maps.Map(document.getElementById('map-canvas'), {
+        center: { lat: initialLat, lng: initialLng },
+        zoom: initialZoom
+    });
+
+    // Create a marker on the map at the initial coordinates (only if marker doesn't exist)
+    if (!mark) {
+        mark = new google.maps.Marker({
+            position: { lat: initialLat, lng: initialLng },
+            map: map
+        });
+    }
+        }
+function createWaypoints(intermediateCoordinates) {
+    const waypoints = intermediateCoordinates.map(coordinate => {
+        return {
+            location: {
+                lat: coordinate.lat,
+                lng: coordinate.lng
+            },
+            stopover: true  // You can adjust this as needed
+        };
+    });
+    console.log("waypoints",waypoints);
+    return waypoints;
+}
+let deviceIds=[];
+const routes=[3];
+let intermediate_coordinates = {};
+
+ initialCoordinates = {};
+initialForward = {};
+finalForward = {};
+ initialBackward = {};
+let finalBackward = {};
+let intermediateCord = {};
+let intermediateCordForward = {};
+let intermediateCordBackward = {};
+let waypoints = {};
+let waypointsForward = {};
+let waypointsBackward = {};
+let markers = {};
+let destination_cord={};
+let previousForwardRender = {};
+let previousBackwardRender = {};
+let colorOfDevice = { "10": "green", "11": "yellow", "12": "orange", "14": "red" };
+let previousLat = {};
+let previousLng = {};
+let flag = {};
+let currentMarker = {};
+async function getCoordinates() {
+  try {
+    // Fetch data from the API
+    console.log(routes);
+    for(const route_id in routes)
+    {  
+      console.log(route_id);
+      const response = await fetch(`http://127.0.0.1:5000/route/${routes[route_id]}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Extract only device_id from shuttle devices
+    const temp= data.shuttle_devices.map(device => device.device_id);
+    deviceIds=[...deviceIds,...temp];//add the device_id of this route into the collection of device id
+     
+
+    // Extract intermediate coordinates and sort based on order
+    const intermediateCoordinates = data.intermediate_coordinates.sort((a, b) => a.order - b.order);
+
+    // Extract latitude and longitude from intermediate coordinates
+    const coordinatesArray = intermediateCoordinates.map(coord => ({
+      lat: coord.latitude,
+      lng: coord.longitude
+    }));
+    for(const device_id in temp)
+    {
+      initialCoordinates[temp[device_id]]=coordinatesArray[0];
+      //console.log("intial cord for deviceid",device_id,initialCoordinates[temp[device_id]]);
+      initialForward[temp[device_id]]=initialCoordinates[temp[device_id]];
+      //console.log("Intial forward:",initialForward[temp[device_id]])
+      finalBackward[temp[device_id]]=initialCoordinates[temp[device_id]];
+      //acessing the destination cordin
+      destination_cord[temp[device_id]]=coordinatesArray[coordinatesArray.length -1];
+      //console.log(temp[device_id],destination_cord[temp[device_id]])
+      finalForward[temp[device_id]] = destination_cord[temp[device_id]];
+      initialBackward[temp[device_id]] = finalForward[temp[device_id]];
+      //intermediatecoordinates
+      intermediateCordForward[temp[device_id]]=coordinatesArray;
+      intermediateCord[temp[device_id]]= intermediateCordForward[temp[device_id]];
+      //console.log(intermediateCord[temp[device_id]])
+    intermediateCordBackward[temp[device_id]] = intermediateCordForward[temp[device_id]].slice().reverse();
+    //creating waypoints for the intermidate cord
+    waypoints[temp[device_id]] = createWaypoints(intermediateCord[temp[device_id]]);
+    waypointsForward[temp[device_id]] = waypoints[temp[device_id]];
+    //console.log("waypoints ",waypointsForward[temp[device_id]]);
+    waypointsBackward[temp[device_id]] = waypoints[temp[device_id]].slice().reverse();
+
+
+    }
+    console.log('Device IDs:', deviceIds);
+    //console.log('Coordinates Array:', coordinatesArray);
+    for (const device_id of deviceIds) {
+    previousForwardRender[device_id] = false;
+    previousBackwardRender[device_id] = false;
+    previousLat[device_id] = false;
+    previousLng[device_id] = false;
+    flag[device_id] = true;
+    currentMarker[device_id] = false;
+}
+   //console.log('intialcord',initialCoordinates);
+   //console.log("finalfr",finalForward);
+
+    return { deviceIds, coordinatesArray };
+  }
+  } catch (error) {
+    console.error('Error fetching data:', error.message);
+    return null;
+  }
+}
+
+
+//////
+
+////
+async function getCurrentCoordinates(device_id) {
+    try {
+     
+        const response = await fetch(`http://127.0.0.1:5000/current_cord?device_id=${device_id}`);
+        const data = await response.json();
+        const lat = parseFloat(data.latitude);
+        const lng = parseFloat(data.longitude);
+        let d = { 'lat': lat, 'lng': lng };
+        //console.log("current coordinates:", d, device_id);
+        return d;
+    } catch (error) {
+        //console.error('Error fetching current coordinates:', error);
+    }
+}
+getCoordinates();
+async function createMarkersForInitialAndDestination() {
+  console.log("inside create amrker",deviceIds);
+  for (const device_id of deviceIds) {
+    if (markers[device_id] === undefined) {
+      markers[device_id] = {};
+    }
+    console.log("inside create marker")
+    if (markers[device_id].initial === undefined) {
+      markers[device_id].initial = new google.maps.Marker({
+        position: new google.maps.LatLng(initialCoordinates[device_id].lat, initialCoordinates[device_id].lng),
+        icon: {
+          url: `static/map.png`,
+          scaledSize: new google.maps.Size(40, 40),
+          anchor: new google.maps.Point(5, 5),
+        },
+        label: {
+          text: `${device_id}`,
+          color: 'white',
+          fontSize: '7px',
+          fontWeight: '900',
+        },
+        animation: google.maps.Animation.DROP,
+      });
+      markers[device_id].initial.setMap(map);
+    }
+
+    if (markers[device_id].destination === undefined) {
+      markers[device_id].destination = new google.maps.Marker({
+        position: new google.maps.LatLng(initialBackward[device_id].lat, initialBackward[device_id].lng),
+        icon: {
+          url: `static/map.png`,
+          scaledSize: new google.maps.Size(40, 40),
+          anchor: new google.maps.Point(5, 5),
+        },
+        label: {
+          text: `${device_id}`,
+          color: 'white',
+          fontSize: '7px',
+          fontWeight: '900',
+        },
+        animation: google.maps.Animation.DROP,
+      });
+      markers[device_id].destination.setMap(map);
+    }
+  }
+}
+
+async function update() {
+  if (trackingEnabled) {
+    try {
+      let bounds = new google.maps.LatLngBounds();
+      for (const device_id of deviceIds) {
+
+        //creating a renderer object for the forward route
+        const forwardRenderer = new google.maps.DirectionsRenderer({
+          map: map,
+          suppressMarkers: true,
+          polylineOptions: {
+            strokeColor: "blue" // Set the desired color, e.g., 'green'
+          }
+        });
+        //created a reneder object for the backward route
+        const backwardRenderer = new google.maps.DirectionsRenderer({
+          map: map,
+          suppressMarkers: true,
+          polylineOptions: {
+            strokeColor: "red" // Set the desired color, e.g., 'green'
+          }
+        });
+        //directionServices object
+        let directionsService = new google.maps.DirectionsService();
+        //current cordinates 
+        let currentCoordinates = await getCurrentCoordinates(device_id);
+
+        //console.log("final forward",finalForward);
+        
+
+        if (currentCoordinates.lat === finalBackward[device_id].lat && currentCoordinates.lng === finalBackward[device_id].lng) {
+          flag[device_id] = true;
+        }
+       //checks if the current coorinate is intermidate cordinate
+       let index = -1;
+        for (let i = 0; i < intermediateCordForward[device_id].length; i++) {
+            const coordinate = intermediateCordForward[device_id][i];
+            if (currentCoordinates.lat === coordinate.lat && currentCoordinates.lng === coordinate.lng) 
+            {
+              index = i;
+              break;
+            }
+        }
+        //removes that element if it is current cordinate=intermediate cordinate
+        if (index !== -1) {
+          
+          intermediateCordForward[device_id].splice(index, 1);
+          console.log("Current cordinate is equal to the intermediate cordinate , so we are remove it from the list ")
+          waypointsForward[device_id] = createWaypoints(intermediateCordForward[device_id]);
+        }
+        console.log("Intermidate cordinate",intermediateCordForward);
+        // Check if the distance between the current cordinate and the intermediate cordinate is less than 30 meters
+        console.log("cord length ......",intermediateCordForward?.length > 0);
+        if (intermediateCordForward && intermediateCordForward.length > 0) 
+        {
+          console.log("In info line.....")
+          info = (await fetchMetrics(currentCoordinates, intermediateCordForward[0]))['distance'] * 1000;
+          console.log("Current distnace between the next intermidate cordina",info);
+          if (info <= 30) {
+              intermediateCordForward.shift();
+              console.log("Since the current coordinate is near the intermdiate cord we are removing it")
+              waypointsForward[device_id] = createWaypoints(intermediateCordForward[device_id]);
+          }
+        } 
+        //changing the flag to backward direction if it reachs
+      if (currentCoordinates.lat === finalForward[device_id].lat &&
+    currentCoordinates.lng === finalForward[device_id].lng) {
+          flag[device_id] = false;
+        }
+
+      console.log("markers",initialForward[device_id]);
+      const initialLatLng = new google.maps.LatLng(initialForward[device_id].lat, initialForward[device_id].lng);
+      const finalLatLng = new google.maps.LatLng(finalForward[device_id].lat, finalForward[device_id].lng);
+
+      bounds.extend(initialLatLng);
+      bounds.extend(finalLatLng);
+      //checking if the current position is being updated
+      if ((previousLat[device_id] === false && previousLng[device_id] === false) ||
+          (previousLat[device_id] !== currentCoordinates.lat || previousLng[device_id] !== currentCoordinates.lng)) {
+          if (flag[device_id] === true) 
+          {
+            // if it has already passed to through the backward route ,reinitilize it to the reverse intermediate coordinates
+            if (intermediateCordBackward[device_id].length === 0) {
+              intermediateCordBackward[device_id] = intermediateCord[device_id].slice().reverse();
+              waypointsBackward[device_id] = createWaypoints(intermediateCordBackward[device_id]);
+            }
+            // clearing out the forward route if it already exist
+            if (previousForwardRender[device_id] !== false) {
+              previousForwardRender[device_id].setOptions({ polylineOptions: { strokeColor: 'light blue' } });
+              previousForwardRender[device_id].setMap(null);
+              console.log("forward route cleared");
+            }
+            //clearing out the backroute if exist
+            if (previousBackwardRender[device_id] !== false) {
+              previousBackwardRender[device_id].setOptions({ polylineOptions: { strokeColor: 'light blue' } });
+              previousBackwardRender[device_id].setMap(null);
+              console.log("backward route cleared");
+            }
+            console.log("Waypoints in the current forward direction",waypointsForward);
+            const requestForward = {
+              origin: new google.maps.LatLng(currentCoordinates.lat, currentCoordinates.lng),
+              destination: new google.maps.LatLng(finalForward[device_id].lat, finalForward[device_id].lng),
+              waypoints: waypointsForward[device_id],
+              travelMode: google.maps.TravelMode.DRIVING,
+            };
+
+            const requestBackward = {
+              origin: new google.maps.LatLng(initialBackward[device_id].lat, initialBackward[device_id].lng),
+              destination: new google.maps.LatLng(finalBackward[device_id].lat, finalBackward[device_id].lng),
+              waypoints: waypointsBackward[device_id],
+              travelMode: google.maps.TravelMode.DRIVING,
+            };
+
+            directionsService.route(requestForward, function (result, status) {
+              if (status === google.maps.DirectionsStatus.OK) {
+                forwardRenderer.setMap(map);
+                forwardRenderer.setDirections(result);
+                const startLocation = result.routes[0].legs[0].start_location;
+
+                if (currentMarker[device_id]==false) {
+                  currentMarker[device_id] = new google.maps.Marker({
+                    position: startLocation,
+                    map: map,
+                    icon: {
+                      url: `static/${color_device_map[device_id]}.png`,
+                      scaledSize: new google.maps.Size(30, 30),
+                      anchor: new google.maps.Point(5, 5),
+                    },
+                    title: 'Current Point',
+                  });
+                  currentMarker[device_id].setMap(map);
+                } else {
+                  currentMarker[device_id].setPosition(startLocation);
+                }
+                previousForwardRender[device_id]=forwardRenderer;
+              }
+            });
+
+            directionsService.route(requestBackward, function (result, status) {
+              if (status === google.maps.DirectionsStatus.OK) {
+                backwardRenderer.setMap(map);
+                backwardRenderer.setDirections(result);
+                previousBackwardRender[device_id] = backwardRenderer;
+              }
+            });
+            PopulateTable();
+          }
+
+          if (flag[device_id] === false) {
+            console.log("GOT inside the backward route")
+            if (intermediateCordForward[device_id].length === 0) {
+              intermediateCordForward[device_id] = intermediateCord[device_id];//
+              waypointsForward[device_id] = createWaypoints(intermediateCordForward[device_id]);
+            }
+
+            let index1 = -1;
+            for (let i = 0; i < intermediateCordBackward[device_id].length; i++) {
+              const coordinate = intermediateCordBackward[device_id][i];
+              if (currentCoordinates.lat === coordinate.lat && currentCoordinates.lng === coordinate.lng) {
+                index1 = i;
+                break;
+              }
+            }
+
+            if (index1 !== -1) {
+              intermediateCordBackward[device_id].splice(index1, 1);
+              waypointsBackward[device_id] = createWaypoints(intermediateCordBackward[device_id]);
+            }           
+            if (intermediateCordBackward && intermediateCordBackward.length > 0) {
+                info = (await fetchMetrics(current_cord, intermediateCordBackward[0]))['distance'] * 1000;
+                if (info <= 10) {
+                    intermediateCordBackward.shift();
+                    waypointsBackward[device_id] = createWaypoints(intermediateCordBackward[device_id]);
+                }
+            } 
+              
+            if (previousBackwardRender[device_id] !== false) {
+              previousBackwardRender[device_id].setOptions({ polylineOptions: { strokeColor: 'light blue' } });
+              previousBackwardRender[device_id].setMap(null);
+              console.log("backward route cleared");
+            }
+
+            if (previousForwardRender[device_id] !== false) {
+              previousForwardRender[device_id].setOptions({ polylineOptions: { strokeColor: 'light blue' } });
+              previousForwardRender[device_id].setMap(null);
+              console.log("forward route cleared");
+            }
+
+            const requestForward = {
+              origin: new google.maps.LatLng(initialForward[device_id].lat, initialForward[device_id].lng),
+              destination: new google.maps.LatLng(finalForward[device_id].lat, finalForward[device_id].lng),
+              waypoints: waypointsForward[device_id],
+              travelMode: google.maps.TravelMode.DRIVING,
+            };
+
+            const requestBackward = {
+              origin: new google.maps.LatLng(currentCoordinates.lat, currentCoordinates.lng),
+              destination: new google.maps.LatLng(finalBackward[device_id].lat, finalBackward[device_id].lng),
+              waypoints: waypointsBackward[device_id],
+              travelMode: google.maps.TravelMode.DRIVING,
+            };
+
+            directionsService.route(requestBackward, function (result, status) {
+              if (status === google.maps.DirectionsStatus.OK) {
+                backwardRenderer.setMap(map);
+                backwardRenderer.setDirections(result);
+                previousBackwardRender[device_id] = backwardRenderer;
+                const startLocation = result.routes[0].legs[0].start_location;
+
+                if (!currentMarker[device_id]) {
+                  currentMarker[device_id] = new google.maps.Marker({
+                    position: startLocation,
+                    map: map,
+                    icon: {
+                      url: `static/${color_device_map[device_id]}.png`,
+                      scaledSize: new google.maps.Size(20, 20),
+                      anchor: new google.maps.Point(5, 5),
+                    },
+                    title: 'Current Point',
+                  });
+                  currentMarker[device_id].setMap(map);
+                } else {
+                  currentMarker[device_id].setPosition(startLocation);
+                }
+              }
+            });
+
+            directionsService.route(requestForward, function (result, status) {
+              if (status === google.maps.DirectionsStatus.OK) {
+                forwardRenderer.setMap(map);
+                forwardRenderer.setDirections(result);
+                previousForwardRender[device_id] = forwardRenderer;
+              }
+            });
+          }
+
+          previousLat[device_id] = currentCoordinates.lat;
+          previousLng[device_id] = currentCoordinates.lng;
+          PopulateTable();
+          
+        }
+        //map.fitBounds(bounds);
+      }
+      
+      
+    } catch (error) {
+      console.error('Error updating routes:', error);
+    }
+  }
+}
+let color_device_map={};
+// Define a function to map device_ids to colors
+function getColorForDeviceId(deviceIds) {
+  let colors=['blue','green','purple','yellow']
+  for(const device_id in deviceIds)
+  {
+    color_device_map[deviceIds[device_id]]=colors[device_id];
+    }
+
+  
+}
+async function fetchMetrics(current_cord,destination_cord) {
+    try {
+
+        // Construct the URL with query parameters
+        const url = new URL('http://127.0.0.1:5000/metrics');
+        url.searchParams.append('current_cord', JSON.stringify(current_cord));
+        url.searchParams.append('destination_cord', JSON.stringify(destination_cord));
+
+        const response = await fetch(url, {
+            method: 'GET',  // Use GET instead of POST
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
+
+        if (response.ok) {
+            return await response.json();
+        } else {
+            console.error('Error in fetching data.');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error in fetching data:', error);
+        return null;
+    }
+}
+async function PopulateTable() {
+  try {
+    for (const device_id of deviceIds) {
+      let distance = 0;
+      let duration = 0;
+      //console.log(previousLat[device_id],previousLng[device_id].lng)
+      if (flag[device_id]=== true) {
+        const requestDataForward = {
+          current_cord: { latitude: previousLat[device_id], longitude: previousLng[device_id] },
+          intermidate_cord:formatCoordinates(intermediateCordForward[device_id]),
+          destination_cord: { latitude: finalForward[device_id].lat, longitude: finalForward[device_id].lng }
+        };
+    
+        const response = await fetchData(requestDataForward['current_cord'],requestDataForward['intermidate_cord'],requestDataForward['destination_cord']);
+        console.log("response",response);
+        if (response) {
+          distance = response.distance;
+          duration = response.duration;
+          console.log("distnace and duration at this point",distance,duration);
+          updateTable(device_id, distance, duration);
+        }
+      } else {
+        const requestDataBackward = {
+          current_cord: { latitude: previousLat[device_id], longitude: previousLng[device_id]},
+          intermidate_cord: formatCoordinates(intermediateCordBackward[device_id]),
+          destination_cord: { latitude: finalBackward[device_id].lat, longitude: finalBackward[device_id].lng }
+        };
+
+        const response1 = await fetchData(requestDataBackward['current_cord'],requestDataBackward['intermidate_cord'],requestDataBackward['destination_cord']);
+        const requestData2 = {
+          current_cord: { latitude: initialForward[device_id].lat, longitude: initialForward[device_id].lng },
+          intermidate_cord: formatCoordinates(intermediateCordForward[device_id]),
+          destination_cord: { latitude: finalForward[device_id].lat, longitude: finalForward[device_id].lng }
+        };
+
+        const response2 = await fetchData(requestData2['current_cord'],requestData2['intermidate_cord'],requestData2['destination_cord']);
+
+        if (response1 && response2) {
+          distance = response1.distance + response2.distance;
+          duration = response1.duration + response2.duration;
+          
+          updateTable(device_id, distance, duration);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching and populating data:', error);
+  }
+}
+
+
+function formatCoordinates(coordinates) {
+    if (Array.isArray(coordinates)) {
+        return coordinates.map(coordinate => ({
+            latitude: coordinate.lat,
+            longitude: coordinate.lng
+        }));
+    } else {
+        console.error('Coordinates are not an array.');
+        return [];
+    }
+}
+
+async function fetchData(current_cord,intermediate_cord,destination_cord) {
+    try {
+        //const { current_cord, destination_cord, intermediate_cord } = requestData;
+
+        // Construct the URL with query parameters
+        const url = new URL('http://127.0.0.1:5000/duration/distance');
+        url.searchParams.append('current_cord', JSON.stringify(current_cord));
+        url.searchParams.append('destination_cord', JSON.stringify(destination_cord));
+        url.searchParams.append('intermediate_cord', JSON.stringify(intermediate_cord));
+
+        const response = await fetch(url, {
+            method: 'GET',  // Use GET instead of POST
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
+
+        if (response.ok) {
+            return await response.json();
+        } else {
+            console.error('Error in fetching data.');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error in fetching data:', error);
+        return null;
+    }
+}
+
+
+function updateTable(device_id, distance, duration) {
+    const tableBody = document.getElementById('tableBody');
+    const existingRow = tableBody.querySelector(`tr[data-device-id="${device_id}`);
+    console.log("inside update tabel",deviceIds);
+    if (existingRow) {
+        const color = color_device_map[device_id];
+        console.log(color);
+        const { distance_data, distanceText, duration_data, durationText, speed_data, speedText } = calculateMetrics(distance, duration);
+
+        existingRow.innerHTML = `
+            <td>
+                <div style="width: 20px; height: 20px; background-color: ${color}; display: inline-block; margin-right: 5px;"></div>
+                ${device_id}
+            </td>
+            <td>${distance_data} ${distanceText}</td>
+            <td>${duration_data} ${durationText}</td>
+            <td>${speed_data}${speedText}</td>
+        `;
+    } else {
+        const newRow = document.createElement('tr');
+        newRow.setAttribute('data-device-id', device_id);
+        const color = color_device_map[device_id];
+        console.log("Color of devuce",color);
+        const { distance_data, distanceText, duration_data, durationText, speed_data, speedText } = calculateMetrics(distance, duration);
+
+        newRow.innerHTML = `
+            <td>
+                <div style="width: 20px; height: 20px; background-color: ${color}; display: inline-block; margin-right: 5px;"></div>
+                ${device_id}
+            </td>
+            <td>${distance_data} ${distanceText}</td>
+            <td>${duration_data} ${durationText}</td>
+            <td>${speed_data}${speedText}</td>
+        `;
+        tableBody.appendChild(newRow);
+    }
+}
+
+function calculateMetrics(distance, duration) {
+    let distance_data, distanceText, duration_data, durationText, speed_data, speedText;
+
+    if (duration >= 60) {
+        durationText = "hrs";
+        duration_data = (duration / 60).toFixed(2);
+    } else {
+        durationText = "minutes";
+        duration_data = duration ? duration.toFixed(2) : 0; // Check if duration is defined, or use 0 if undefined
+    }
+
+    if (distance < 1) {
+        distanceText = "meters";
+        distance_data = distance * 1000;
+    } else {
+        distanceText = "Km";
+        distance_data = distance;
+    }
+
+    speed_data = parseFloat(distance_data / duration_data).toFixed(2);
+
+    if (speed_data < 1) {
+        speed_data = speed_data * 1000;
+        let temp = 'm/';
+        speedText = `${temp}${durationText}`;
+    }
+
+    return { distance_data, distanceText, duration_data, durationText, speed_data, speedText };
+}
+
+
+            
+function sortTableByEstimatedTime() {
+    const tableBody = document.getElementById('tableBody');
+    const rows = Array.from(tableBody.querySelectorAll('tr'));
+    //console.log(rows);
+    // Sort the rows based on the "Estimated Time" column (third column)
+    rows.sort((a, b) => {
+        const estimatedTimeA = parseFloat(a.querySelector('td:nth-child(3)').textContent);
+        const estimatedTimeB = parseFloat(b.querySelector('td:nth-child(3)').textContent);
+        return estimatedTimeA - estimatedTimeB;
+    });
+
+    // Clear the existing table and append the sorted rows
+    tableBody.innerHTML = '';
+    rows.forEach(row => {
+        tableBody.appendChild(row);
+    });
+}
+        // Start tracking when the button is clicked
+    document.querySelector('#action').addEventListener('click', function() {
+        var buttonText = document.getElementById("action").textContent;
+        if (buttonText === "Start Tracking") {
+            trackingEnabled = true; // Enable tracking
+            getColorForDeviceId(deviceIds)
+            console.log("after completing getcoordinates")
+            createMarkersForInitialAndDestination();
+            console.log('after completing create marker')
+            update() // Fetch and display GPS data immediately
+            //fetchDestinationCoordinates();
+            insertDataInterval = setInterval(update, 5000); // Fetch data at intervals
+            document.getElementById("action").classList.add('btn-danger');
+            document.getElementById("action").classList.remove('btn-success');
+            document.getElementById("action").textContent = 'Stop Tracking';
+        } else {
+            trackingEnabled = false; // Disable tracking
+            clearInterval(insertDataInterval); // Stop fetching data at intervals
+            document.getElementById("action").classList.remove('btn-danger');
+            document.getElementById("action").classList.add('btn-success');
+            document.getElementById("action").textContent = 'Start Tracking';
+        }
+    });
+    document.getElementById('zoom-in').addEventListener('click', function () {
+        var currentZoom = map.getZoom();
+        map.setZoom(currentZoom + 1);
+    });
+
+    // Event listener for the "Zoom Out" button
+    document.getElementById('zoom-out').addEventListener('click', function () {
+        var currentZoom = map.getZoom();
+        map.setZoom(currentZoom - 1);
+    });
+         // Channel for PubNub communication
+    </script>
+</body>
+</html>

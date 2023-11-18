@@ -1,0 +1,49 @@
+/* Reset some default styles */
+body, html {
+    height:100%
+    
+}
+/* Define styles for bg and bg-others */
+.bg {
+    /* The image used */
+    background-image: url('download.jpeg');
+    filter: blur(1px);
+    -webkit-filter: blur(1px);
+    /* Full height */
+    height: 100%;
+  
+    /* Center and scale the image nicely */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+.bg-others {
+    background-color: #ffffff; /* Change to your desired background color */
+    padding: 20px; /* Add padding as needed */
+}
+
+/* Center the title and button */
+.container {
+    text-align: center;
+}
+
+/* Style the divider */
+.divider {
+    height: 2px;
+    border: none;
+    background-color: #000000; /* Change to your desired color */
+    width: 35%;
+    margin: 0 auto 20px auto; /* Adjust margin as needed */
+}
+
+/* Style the table */
+#table-container {
+    padding-right: 20px; /* Add spacing between table and map */
+}
+
+/* Style the map container */
+#map-container {
+    border: 1px solid #000000; /* Add a border or other styles as needed */
+    height: 400px; /* Adjust the height as needed */
+}

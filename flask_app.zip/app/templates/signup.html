@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="static/css/signup.css">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+</head>
+<body>
+    <div class="sidenav">
+        <div class="login-main-text">
+           <h2>Application<br> Signup Page</h2>
+           <p>register from here to access.</p>
+        </div>
+    </div>
+    <div class="main">
+        <div class="col-md-6 col-sm-12">
+           <div class="login-form">
+                <form id="signup-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required class="form-control" placeholder=" User email">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-username">Name</label>
+                        <input type="text" id="new-username" name="new-username" required class="form-control" placeholder="User name">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">Password</label>
+                        <input type="password" id="new-password" name="new-password" required class="form-control" placeholder="Password">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-black">Sign Up</button>
+                </form>
+                <p id="error-message" class="error"></p>
+           </div>
+        </div>
+    </div>
+        
+    <!-- Corrected script tag -->
+    <script src="static/js/signup.js"></script>
+</body>
+</html>

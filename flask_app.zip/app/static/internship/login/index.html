@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coordinate Form</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Coordinate Form</h2>
+        <form id="coordinate-form">
+            <div class="form-group">
+                <label for="initial-coordinate">Initial Coordinate:</label>
+                <input type="text" id="initial-coordinate" name="initial-coordinate" required>
+            </div>
+            <div class="form-group">
+                <label for="destination-coordinate">Destination Coordinate:</label>
+                <input type="text" id="destination-coordinate" name="destination-coordinate" required>
+            </div>
+            <div class="form-group">
+                <label for="intermediate-coordinates">Intermediate Coordinates:</label>
+                <div id="intermediate-coordinates-container">
+                    <!-- Intermediate coordinates will be added here -->
+                </div>
+                <button type="button" id="add-coordinate">Add Intermediate Coordinate</button>
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+    <script src="form.js"></script>
+</body>
+</html>

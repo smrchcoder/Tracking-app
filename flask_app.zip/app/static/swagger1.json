@@ -1,0 +1,935 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+      "title": "Shuttle Tracking System",
+      "version": "1.0.0",
+      "description": "API for user registration",
+      "license": {
+          "name": "MIT",
+          "url": "https://opensource.org/licenses/MIT"
+      }
+  },
+  "paths": {
+      "/register": {
+          "post": {
+              "summary": "Register a new user",
+              "requestBody": {
+                  "content": {
+                      "application/json": {
+                          "schema": {
+                              "type": "object",
+                              "properties": {
+                                  "name": {
+                                      "type": "string",
+                                      "description": "The user's name"
+                                  },
+                                  "password": {
+                                      "type": "string",
+                                      "description": "The user's password"
+                                  },
+                                  "email": {
+                                      "type": "string",
+                                      "description": "The user's email address"
+                                  }
+                              },
+                              "required": ["name", "password", "email"]
+                          }
+                      }
+                  }
+              },
+              "responses": {
+                  "200": {
+                      "description": "User registered successfully",
+                      "content": {
+                          "application/json": {
+                              "example": {
+                                  "success": true,
+                                  "message": "You have successfully registered!"
+                              }
+                          }
+                      }
+                  },
+                  "400": {
+                      "description": "Bad Request",
+                      "content": {
+                          "application/json": {
+                              "example": {
+                                  "success": false,
+                                  "message": "Invalid request data"
+                              }
+                          }
+                      }
+                  },
+                  "500": {
+                      "description": "Internal Server Error",
+                      "content": {
+                          "application/json": {
+                              "example": {
+                                  "success": false,
+                                  "message": "An error occurred during registration. Please try again."
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+      },
+      "/checklogin": {
+        "post": {
+            "summary": "Check user login",
+            "requestBody": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "email": {
+                                    "type": "string",
+                                    "description": "The user's email address"
+                                },
+                                "password": {
+                                    "type": "string",
+                                    "description": "The user's password"
+                                }
+                            },
+                            "required": ["email", "password"]
+                        }
+                    }
+                }
+            },
+            "responses": {
+                "200": {
+                    "description": "Login successful",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "success": true,
+                                "message": "Logged in successfully"
+                            }
+                        }
+                    }
+                },
+                "401": {
+                    "description": "Unauthorized",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "success": false,
+                                "message": "Incorrect email or password"
+                            }
+                        }
+                    }
+                },
+                "404": {
+                    "description": "User not found",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "success": false,
+                                "message": "User not found"
+                            }
+                        }
+                    }
+                },
+                "400": {
+                    "description": "Bad Request",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "success": false,
+                                "message": "Invalid request format"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "/logout": {
+        "get": {
+            "summary": "Logout",
+            "responses": {
+                "200": {
+                    "description": "Logout successful",
+                    "content": {
+                        "text/plain": {
+                            "example": "Logged out"
+                        }
+                    }
+                },
+                "401": {
+                    "description": "Unauthorized",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "success": false,
+                                "message": "User not logged in"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "/coordinate": {
+      "post": {
+          "summary": "Store a list of coordinates",
+          "requestBody": {
+              "content": {
+                  "application/json": {
+                      "schema": {
+                          "type": "object",
+                          "properties": {
+                              "device_id": {
+                                  "type": "string",
+                                  "description": "The ID of the device"
+                              },
+                              "ilat": {
+                                  "type": "number",
+                                  "description": "Initial latitude"
+                              },
+                              "ilng": {
+                                  "type": "number",
+                                  "description": "Initial longitude"
+                              },
+                              "dlat": {
+                                  "type": "number",
+                                  "description": "Destination latitude"
+                              },
+                              "dlng": {
+                                  "type": "number",
+                                  "description": "Destination longitude"
+                              },
+                              "intermidate_cord": {
+                                  "type": "array",
+                                  "items": {
+                                      "type": "object",
+                                      "properties": {
+                                          "latitude": {
+                                              "type": "number",
+                                              "description": "Intermediate latitude"
+                                          },
+                                          "longitude": {
+                                              "type": "number",
+                                              "description": "Intermediate longitude"
+                                          }
+                                      },
+                                      "required": ["latitude", "longitude"]
+                                  },
+                                  "description": "List of intermediate coordinates"
+                              },
+                              "name": {
+                                  "type": "string",
+                                  "description": "Route name"
+                              }
+                          },
+                          "required": ["device_id", "ilat", "ilng", "dlat", "dlng", "intermidate_cord", "name"]
+                      }
+                  }
+              }
+          },
+          "responses": {
+              "200": {
+                  "description": "Coordinates inserted successfully",
+                  "content": {
+                      "application/json": {
+                          "example": {
+                              "success": true,
+                              "message": "Coordinates have been successfully inserted"
+                          }
+                      }
+                  }
+              },
+              "500": {
+                  "description": "Internal Server Error",
+                  "content": {
+                      "application/json": {
+                          "example": {
+                              "success": false,
+                              "message": "An error occurred during coordinate insertion. Please try again."
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  },
+  "/route/{id}": {
+    "parameters": [
+        {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+                "type": "integer"
+            },
+            "description": "ID of the route"
+        }
+    ],
+    "get": {
+        "summary": "Get route details by ID",
+        "responses": {
+            "200": {
+                "description": "Route details retrieved successfully",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "id": 3,
+                            "intermediate_coordinates": [
+                                {
+                                    "id": 15,
+                                    "latitude": 12.9761,
+                                    "longitude": 77.5979,
+                                    "name": "coord0",
+                                    "order": 0,
+                                    "timeStamp": "2023-11-15T16:39:08"
+                                },
+                                {
+                                    "id": 16,
+                                    "latitude": 12.9904,
+                                    "longitude": 77.6503,
+                                    "name": "coord1",
+                                    "order": 1,
+                                    "timeStamp": "2023-11-15T16:39:08"
+                                },
+                                {
+                                    "id": 17,
+                                    "latitude": 13.0117,
+                                    "longitude": 77.6606,
+                                    "name": "coord2",
+                                    "order": 2,
+                                    "timeStamp": "2023-11-15T16:39:08"
+                                },
+                                {
+                                    "id": 18,
+                                    "latitude": 13.0096,
+                                    "longitude": 77.6604,
+                                    "name": "coord3",
+                                    "order": 3,
+                                    "timeStamp": "2023-11-15T16:39:08"
+                                }
+                            ],
+                            "name": "route3",
+                            "shuttle_devices": [
+                                {
+                                    "device_id": 3,
+                                    "intial_latitude": 12.9767,
+                                    "intial_longitude": 77.5994,
+                                    "shuttel_name": "device3"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "404": {
+                "description": "Route not found",
+                "content": {
+                    "application/json": {
+                        "example": {
+                            "error": "Route not found"
+                        }
+                    }
+                }
+            }
+        }
+    }
+},
+"/live/cordinates": {
+  "post": {
+      "summary": "Insert live coordinates data",
+      "requestBody": {
+          "content": {
+              "application/x-www-form-urlencoded": {
+                  "schema": {
+                      "type": "object",
+                      "properties": {
+                          "device_id": {
+                              "type": "string",
+                              "description": "The ID of the device"
+                          },
+                          "longitude": {
+                              "type": "string",
+                              "description": "The longitude coordinate"
+                          },
+                          "latitude": {
+                              "type": "string",
+                              "description": "The latitude coordinate"
+                          }
+                      },
+                      "required": ["device_id", "longitude", "latitude"]
+                  }
+              }
+          }
+      },
+      "responses": {
+          "200": {
+              "description": "Live coordinates data inserted successfully",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "success": true,
+                          "message": "Live coordinates data inserted successfully"
+                      }
+                  }
+              }
+          },
+          "400": {
+              "description": "Bad Request",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "success": false,
+                          "error": "Invalid request data"
+                      }
+                  }
+              }
+          },
+          "500": {
+              "description": "Internal Server Error",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "success": false,
+                          "error": "An error occurred during data insertion. Please try again."
+                      }
+                  }
+              }
+          }
+      }
+  },
+  "get": {
+      "summary": "Endpoint not supported",
+      "responses": {
+          "405": {
+              "description": "Method Not Allowed",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "Method Not Allowed"
+                      }
+                  }
+              }
+          }
+      }
+  }
+},
+"/shuttel": {
+  "post": {
+      "summary": "Assign route to shuttle",
+      "requestBody": {
+          "content": {
+              "application/json": {
+                  "schema": {
+                      "type": "object",
+                      "properties": {
+                          "shuttle_id": {
+                              "type": "integer",
+                              "description": "The ID of the shuttle"
+                          },
+                          "name": {
+                              "type": "string",
+                              "description": "The name of the shuttle"
+                          },
+                          "route_id": {
+                              "type": "integer",
+                              "description": "The ID of the route to be assigned to the shuttle"
+                          }
+                      },
+                      "required": ["shuttle_id", "name"]
+                  }
+              }
+          }
+      },
+      "responses": {
+          "200": {
+              "description": "Shuttle assigned to route successfully",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "success": true,
+                          "message": "Shuttle assigned to route successfully"
+                      }
+                  }
+              }
+          },
+          "400": {
+              "description": "Bad Request",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "success": false,
+                          "error": "Invalid request data"
+                      }
+                  }
+              }
+          },
+          "500": {
+              "description": "Internal Server Error",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "success": false,
+                          "error": "An error occurred during assignment. Please try again."
+                      }
+                  }
+              }
+          }
+      }
+  }
+},
+"/metrics": {
+  "get": {
+      "summary": "Calculate distance and duration metrics",
+      "parameters": [
+          {
+              "name": "current_cord",
+              "in": "query",
+              "description": "Current coordinates",
+              "required": true,
+              "schema": {
+                  "type": "object",
+                  "properties": {
+                      "latitude": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Latitude of current location"
+                      },
+                      "longitude": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Longitude of current location"
+                      }
+                  },
+                  "required": ["latitude", "longitude"]
+              }
+          },
+          {
+              "name": "destination_cord",
+              "in": "query",
+              "description": "Destination coordinates",
+              "required": true,
+              "schema": {
+                  "type": "object",
+                  "properties": {
+                      "latitude": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Latitude of destination location"
+                      },
+                      "longitude": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Longitude of destination location"
+                      }
+                  },
+                  "required": ["latitude", "longitude"]
+              }
+          }
+      ],
+      "responses": {
+          "200": {
+              "description": "Metrics calculated successfully",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "distance": 10.5,
+                          "duration": 15.3
+                      }
+                  }
+              }
+          },
+          "400": {
+              "description": "Bad Request",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "Invalid request data"
+                      }
+                  }
+              }
+          },
+          "500": {
+              "description": "Internal Server Error",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "An error occurred during metric calculation. Please try again."
+                      }
+                  }
+              }
+          }
+      }
+  },
+  "post": {
+      "summary": "Calculate distance and duration metrics",
+      "requestBody": {
+          "content": {
+              "application/x-www-form-urlencoded": {
+                  "schema": {
+                      "type": "object",
+                      "properties": {
+                          "current_cord": {
+                              "type": "string",
+                              "description": "Current coordinates as a JSON string"
+                          },
+                          "destination_cord": {
+                              "type": "string",
+                              "description": "Destination coordinates as a JSON string"
+                          }
+                      },
+                      "required": ["current_cord", "destination_cord"]
+                  }
+              }
+          }
+      },
+      "responses": {
+          "200": {
+              "description": "Metrics calculated successfully",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "distance": 10.5,
+                          "duration": 15.3
+                      }
+                  }
+              }
+          },
+          "400": {
+              "description": "Bad Request",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "Invalid request data"
+                      }
+                  }
+              }
+          },
+          "500": {
+              "description": "Internal Server Error",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "An error occurred during metric calculation. Please try again."
+                      }
+                  }
+              }
+          }
+      }
+  }
+},
+"/duration/distance": {
+  "get": {
+      "summary": "Calculate total distance and duration",
+      "parameters": [
+          {
+              "name": "current_cord",
+              "in": "query",
+              "description": "Current coordinates",
+              "required": true,
+              "schema": {
+                  "type": "object",
+                  "properties": {
+                      "latitude": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Latitude of current location"
+                      },
+                      "longitude": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Longitude of current location"
+                      }
+                  },
+                  "required": ["latitude", "longitude"]
+              }
+          },
+          {
+              "name": "destination_cord",
+              "in": "query",
+              "description": "Destination coordinates",
+              "required": true,
+              "schema": {
+                  "type": "object",
+                  "properties": {
+                      "latitude": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Latitude of destination location"
+                      },
+                      "longitude": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Longitude of destination location"
+                      }
+                  },
+                  "required": ["latitude", "longitude"]
+              }
+          },
+          {
+              "name": "intermediate_cord",
+              "in": "query",
+              "description": "Intermediate coordinates",
+              "required": true,
+              "schema": {
+                  "type": "array",
+                  "items": {
+                      "type": "object",
+                      "properties": {
+                          "latitude": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Latitude of intermediate location"
+                          },
+                          "longitude": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Longitude of intermediate location"
+                          }
+                      },
+                      "required": ["latitude", "longitude"]
+                  }
+              }
+          }
+      ],
+      "responses": {
+          "200": {
+              "description": "Distance and duration calculated successfully",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "distance": 10.5,
+                          "duration": 15.3
+                      }
+                  }
+              }
+          },
+          "400": {
+              "description": "Bad Request",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "Invalid request data"
+                      }
+                  }
+              }
+          },
+          "500": {
+              "description": "Internal Server Error",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "An error occurred during calculation. Please try again."
+                      }
+                  }
+              }
+          }
+      }
+  },
+  "post": {
+      "summary": "Calculate total distance and duration",
+      "requestBody": {
+          "content": {
+              "application/json": {
+                  "schema": {
+                      "type": "object",
+                      "properties": {
+                          "current_cord": {
+                              "type": "object",
+                              "description": "Current coordinates",
+                              "properties": {
+                                  "latitude": {
+                                      "type": "number",
+                                      "format": "float",
+                                      "description": "Latitude of current location"
+                                  },
+                                  "longitude": {
+                                      "type": "number",
+                                      "format": "float",
+                                      "description": "Longitude of current location"
+                                  }
+                              },
+                              "required": ["latitude", "longitude"]
+                          },
+                          "destination_cord": {
+                              "type": "object",
+                              "description": "Destination coordinates",
+                              "properties": {
+                                  "latitude": {
+                                      "type": "number",
+                                      "format": "float",
+                                      "description": "Latitude of destination location"
+                                  },
+                                  "longitude": {
+                                      "type": "number",
+                                      "format": "float",
+                                      "description": "Longitude of destination location"
+                                  }
+                              },
+                              "required": ["latitude", "longitude"]
+                          },
+                          "intermediate_cord": {
+                              "type": "array",
+                              "description": "Intermediate coordinates",
+                              "items": {
+                                  "type": "object",
+                                  "properties": {
+                                      "latitude": {
+                                          "type": "number",
+                                          "format": "float",
+                                          "description": "Latitude of intermediate location"
+                                      },
+                                      "longitude": {
+                                          "type": "number",
+                                          "format": "float",
+                                          "description": "Longitude of intermediate location"
+                                      }
+                                  },
+                                  "required": ["latitude", "longitude"]
+                              }
+                          }
+                      },
+                      "required": ["current_cord", "destination_cord", "intermediate_cord"]
+                  }
+              }
+          }
+      },
+      "responses": {
+          "200": {
+              "description": "Distance and duration calculated successfully",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "distance": 10.5,
+                          "duration": 15.3
+                      }
+                  }
+              }
+          },
+          "400": {
+              "description": "Bad Request",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "Invalid request data"
+                      }
+                  }
+              }
+          },
+          "500": {
+              "description": "Internal Server Error",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "An error occurred during calculation. Please try again."
+                      }
+                  }
+              }
+          }
+      }
+  }
+},
+"/current_cord": {
+  "get": {
+      "summary": "Get current coordinates",
+      "parameters": [
+          {
+              "name": "device_id",
+              "in": "query",
+              "description": "ID of the device",
+              "required": true,
+              "schema": {
+                  "type": "string",
+                  "description": "The device ID"
+              }
+          }
+      ],
+      "responses": {
+          "200": {
+              "description": "Current coordinates retrieved successfully",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "latitude": 12.34,
+                          "longitude": 56.78
+                      }
+                  }
+              }
+          },
+          "400": {
+              "description": "Bad Request",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "Invalid request data"
+                      }
+                  }
+              }
+          },
+          "500": {
+              "description": "Internal Server Error",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "An error occurred. Please try again."
+                      }
+                  }
+              }
+          }
+      }
+  },
+  "post": {
+      "summary": "Get current coordinates",
+      "requestBody": {
+          "content": {
+              "application/x-www-form-urlencoded": {
+                  "schema": {
+                      "type": "object",
+                      "properties": {
+                          "device_id": {
+                              "type": "string",
+                              "description": "ID of the device"
+                          }
+                      },
+                      "required": ["device_id"]
+                  }
+              }
+          }
+      },
+      "responses": {
+          "200": {
+              "description": "Current coordinates retrieved successfully",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "latitude": 12.34,
+                          "longitude": 56.78
+                      }
+                  }
+              }
+          },
+          "400": {
+              "description": "Bad Request",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "Invalid request data"
+                      }
+                  }
+              }
+          },
+          "500": {
+              "description": "Internal Server Error",
+              "content": {
+                  "application/json": {
+                      "example": {
+                          "error": "An error occurred. Please try again."
+                      }
+                  }
+              }
+          }
+      }
+  }
+}
+  }
+}

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="static/css/shuttle.css">
+  <style>
+    body {
+      background-image: url('/static/insertimage.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+  </style>
+  <title>Shuttle Form</title>
+</head>
+<body>
+
+<div class="form-container">
+  <form id="shuttleForm">
+    <div class="form-column">
+      <label for="shuttleId">Shuttle ID:</label>
+      <input type="text" id="shuttleId" name="shuttle_id" required>
+    </div>
+
+    <div class="form-column">
+      <label for="name">Shuttle Name:</label>
+      <input type="text" id="name" name="name" required>
+    </div>
+
+    <div class="form-column">
+      <label for="routeId">Route ID:</label>
+      <input type="text" id="routeId" name="route_id">
+    </div>
+
+    <button type="submit">Submit</button>
+  </form>
+</div>
+
+<script src="static/js/shuttle.js"></script>
+</body>
+</html>
